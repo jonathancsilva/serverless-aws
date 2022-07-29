@@ -1,10 +1,10 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   dynamodb-streams
 
   Sample SAM Template for dynamodb-streams
-  
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -29,16 +29,51 @@ Resources:
             StartingPosition: TRIM_HORIZON
 
   PessoasTable:
-      Type: AWS::DynamoDB::Table
-      Properties: 
-        AttributeDefinitions: 
-          - AttributeName: id
-            AttributeType: S
-        KeySchema: 
-          - AttributeName: id
-            KeyType: HASH
-        ProvisionedThroughput: 
-          ReadCapacityUnits: 5
-          WriteCapacityUnits: 5
-        StreamSpecification:
-          StreamViewType: NEW_IMAGE
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  PrimeiraFilaCriadaComCloudFormation:
+    Type: AWS::SQS::Queue
+    Properties:
+      RedrivePolicy:
+        deadLetterTargetArn:
+          Fn::GetAtt:
+            - "PrimeiraDLQCriadaComCloudFormation"
+            - "Arn"
+        maxReceiveCount: 5
+
+  PrimeiraDLQCriadaComCloudFormation:
+    Type: AWS::SQS::Queue
+
+Outputs:
+  SourceQueueURL:
+    Description: "URL of source queue"
+    Value:
+      Ref: "PrimeiraFilaCriadaComCloudFormation"
+  SourceQueueARN:
+    Description: "ARN of source queue"
+    Value:
+      Fn::GetAtt:
+        - "PrimeiraFilaCriadaComCloudFormation"
+        - "Arn"
+  DeadLetterQueueURL:
+    Description: "URL of dead-letter queue"
+    Value:
+      Ref: "PrimeiraDLQCriadaComCloudFormation"
+  DeadLetterQueueARN:
+    Description: "ARN of dead-letter queue"
+    Value:
+      Fn::GetAtt:
+        - "PrimeiraDLQCriadaComCloudFormation"
+        - "Arn"
